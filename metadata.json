@@ -1,0 +1,6 @@
+{
+  "name": "Registro de Pagos Agrícolas",
+  "description": "Registro y control semanal de cosechas agrícolas (de miércoles a miércoles) con cálculo de haberes, descuento del 19% y comparación histórica.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
