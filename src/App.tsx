@@ -17,10 +17,16 @@ import WeeklyDashboard from "./components/WeeklyDashboard";
 import WorkEntryForm from "./components/WorkEntryForm";
 import HistoryDashboard from "./components/HistoryDashboard";
 import ProductsDashboard from "./components/ProductsDashboard";
+import Login from "./components/Login";
 import { ClipboardList, BarChart2, Coins, Receipt, Info, Sparkles, Tag } from "lucide-react";
 
 /// Save entries automatically to localStorage
 export default function App() {
+  // 1a. User login state with persistence
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem("agricola_pay_logged_in") === "true";
+  });
+
   // 1. Initial State Loading starting completely empty
   const [allEntries, setAllEntries] = useState<WorkEntry[]>(() => {
     const saved = localStorage.getItem("agricola_pay_entries_clean_v1");
@@ -79,6 +85,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("agricola_pay_products_v1", JSON.stringify(products));
   }, [products]);
+
+  // Save login state automatically to localStorage
+  useEffect(() => {
+    localStorage.setItem("agricola_pay_logged_in", String(isLoggedIn));
+  }, [isLoggedIn]);
 
   // Save navigation and active tab states to localStorage
   useEffect(() => {
@@ -220,6 +231,10 @@ export default function App() {
     setCurrentWeekId(getPayWeekEndingDate(systemDate));
   };
 
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col justify-between">
       <div>
@@ -228,6 +243,7 @@ export default function App() {
           onExportBackup={handleExportBackup} 
           onImportBackup={handleImportBackup} 
           onResetData={handleResetData} 
+          onLogout={() => setIsLoggedIn(false)}
         />
 
         {/* Main Section */}

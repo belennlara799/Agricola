@@ -11,16 +11,18 @@ import {
   Info, 
   RefreshCw, 
   FileText,
-  Percent
+  Percent,
+  LogOut
 } from "lucide-react";
 
 interface HeaderProps {
   onExportBackup: () => void;
   onImportBackup: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onResetData: () => void;
+  onLogout: () => void;
 }
 
-export default function Header({ onExportBackup, onImportBackup, onResetData }: HeaderProps) {
+export default function Header({ onExportBackup, onImportBackup, onResetData, onLogout }: HeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showHelp, setShowHelp] = React.useState(false);
 
@@ -94,6 +96,16 @@ export default function Header({ onExportBackup, onImportBackup, onResetData }: 
             >
               <RefreshCw className="h-3 w-3" />
               <span>Reiniciar</span>
+            </button>
+
+            <button
+              onClick={onLogout}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-650 hover:bg-rose-700 active:bg-rose-900 text-white rounded-lg text-xs font-semibold shadow-xs border border-rose-600 transition-colors cursor-pointer"
+              title="Cerrar sesión de María Galleguillos"
+              id="btn-logout"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Salir (María G.)</span>
             </button>
           </div>
         </div>
