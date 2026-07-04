@@ -76,6 +76,34 @@ export default function App() {
     return PRODUCT_CATALOG;
   });
 
+  // Server Synchronization states
+  const [isLoadedFromServer, setIsLoadedFromServer] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Load initial data from Express server on mount
+  useEffect(() => {
+    async function loadServerData() {
+      try {
+        const response = await fetch("/api/data");
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data.entries)) {
+            setAllEntries(data.entries);
+          }
+          if (Array.isArray(data.products) && data.products.length > 0) {
+            setProducts(data.products);
+          }
+        }
+      } catch (err) {
+        console.warn("No server api detected or offline. Fallback to local storage.", err);
+      } finally {
+        setIsLoadedFromServer(true);
+      }
+    }
+    loadServerData();
+  }, []);
+
   // Save entries automatically to localStorage
   useEffect(() => {
     localStorage.setItem("agricola_pay_entries_clean_v1", JSON.stringify(allEntries));
@@ -103,6 +131,47 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("agricola_pay_active_tab", activeTab);
   }, [activeTab]);
+
+  // Save to the server whenever entries or products change (only after initial server load succeeds!)
+  useEffect(() => {
+    if (!isLoadedFromServer) return;
+
+    let active = true;
+    async function saveServerData() {
+      setIsSyncing(true);
+      setSyncError(null);
+      try {
+        const response = await fetch("/api/data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ entries: allEntries, products }),
+        });
+        if (!response.ok) {
+          throw new Error("Respuesta de red no satisfactoria");
+        }
+      } catch (err) {
+        if (active) {
+          console.warn("No se pudo guardar la información en el servidor:", err);
+          setSyncError("Modo Local (Offline)");
+        }
+      } finally {
+        if (active) {
+          setIsSyncing(false);
+        }
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      saveServerData();
+    }, 600);
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [allEntries, products, isLoadedFromServer]);
 
   // Derive selected day details
   const selectedDay = useMemo(() => {
@@ -292,13 +361,28 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-50/80 text-emerald-700 rounded-full border border-emerald-100/70 text-[11px] font-semibold self-start md:self-auto shadow-xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>Cambios guardados localmente en este navegador</span>
-            </div>
+            {isSyncing ? (
+              <div className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 text-[11px] font-semibold self-start md:self-auto shadow-xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                <span>Sincronizando con el servidor...</span>
+              </div>
+            ) : syncError ? (
+              <div className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-amber-50 text-amber-700 rounded-full border border-amber-100 text-[11px] font-semibold self-start md:self-auto shadow-xs">
+                <span className="h-2 w-2 bg-amber-500 rounded-full"></span>
+                <span>Guardado Localmente (Offline)</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 text-[11px] font-semibold self-start md:self-auto shadow-xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Sincronizado con la Nube</span>
+              </div>
+            )}
           </div>
 
           {/* Interactive view container */}
